@@ -23,7 +23,7 @@ import re
 import stat
 import subprocess
 import time
-import utils
+from motioneye import utils
 
 
 _resolutions_cache = {}
@@ -110,11 +110,11 @@ def list_devices():
 
 
 def list_resolutions(device):
-    import motionctl
+    from motioneye import motionctl
     
     global _resolutions_cache
     
-    device = utils.make_str(device)
+    device = str(device)
     
     if device in _resolutions_cache:
         return _resolutions_cache[device]
@@ -197,7 +197,7 @@ def list_resolutions(device):
 
 
 def device_present(device):
-    device = utils.make_str(device)
+    device = str(device)
     
     try:
         st = os.stat(device)
@@ -208,7 +208,7 @@ def device_present(device):
     
 
 def find_persistent_device(device):
-    device = utils.make_str(device)
+    device = str(device)
     
     try:
         devs_by_id = os.listdir(_DEV_V4L_BY_ID)
@@ -227,7 +227,7 @@ def find_persistent_device(device):
 def list_ctrls(device):
     global _ctrls_cache
     
-    device = utils.make_str(device)
+    device = str(device)
 
     if device in _ctrls_cache:
         return _ctrls_cache[device]

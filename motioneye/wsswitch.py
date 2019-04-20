@@ -21,13 +21,13 @@ import logging
 
 from tornado.ioloop import IOLoop
 
-import config
-import motionctl
-import utils
+from motioneye import config
+from motioneye import motionctl
+from motioneye import utils
 
 
 def start():
-    io_loop = IOLoop.instance()
+    io_loop = IOLoop.current()
     io_loop.add_timeout(datetime.timedelta(seconds=1), _check_ws)
 
 
@@ -73,7 +73,7 @@ def _during_working_schedule(now, working_schedule):
 
 def _check_ws():
     # schedule the next call
-    io_loop = IOLoop.instance()
+    io_loop = IOLoop.current()
     io_loop.add_timeout(datetime.timedelta(seconds=10), _check_ws)
 
     if not motionctl.running():

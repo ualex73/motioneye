@@ -24,13 +24,14 @@ import re
 import signal
 import sys
 import time
+from six.moves import range
 
 from tornado.ioloop import IOLoop
 from tornado.web import Application
 
-import handlers
-import settings
-import template
+from motioneye import handlers
+from motioneye import settings
+from motioneye import template
 
 
 _PID_FILE = 'motioneye.pid'
@@ -48,7 +49,7 @@ class Daemon(object):
             if os.fork() > 0:  # parent
                 sys.exit(0)
 
-        except OSError, e: 
+        except OSError as e: 
             sys.stderr.write('fork() failed: %s\n' % e.strerror)
             sys.exit(-1)
 
@@ -61,7 +62,7 @@ class Daemon(object):
             if os.fork() > 0:  # parent
                 sys.exit(0) 
         
-        except OSError, e: 
+        except OSError as e: 
             sys.stderr.write('fork() failed: %s\n' % e.strerror)
             sys.exit(-1) 
 
@@ -123,7 +124,7 @@ class Daemon(object):
         except Exception as e:
             sys.stderr.write('failed to terminate server: %s\n' % e)
 
-        for i in xrange(50):  # @UnusedVariable
+        for i in range(50):  # @UnusedVariable
             try:
                 os.kill(pid, 0)
                 time.sleep(0.1)
@@ -196,7 +197,7 @@ def configure_signals():
         logging.info('interrupt signal received, shutting down...')
 
         # shut down the IO loop if it has been started
-        io_loop = IOLoop.instance()
+        io_loop = IOLoop.current()
         io_loop.stop()
         
     def child_handler(signal, frame):
@@ -258,16 +259,16 @@ def test_requirements():
         logging.fatal('please install pycurl')
         sys.exit(-1)
     
-    import motionctl
+    from motioneye import motionctl
     has_motion = motionctl.find_motion()[0] is not None
     
-    import mediafiles
+    from motioneye import mediafiles
     has_ffmpeg = mediafiles.find_ffmpeg() is not None
     
-    import v4l2ctl
+    from motioneye import v4l2ctl
     has_v4lutils = v4l2ctl.find_v4l2_ctl() is not None
 
-    import smbctl
+    from motioneye import smbctl
     if settings.SMB_SHARES and smbctl.find_mount_cifs() is None:
         logging.fatal('please install cifs-utils')
         sys.exit(-1)
@@ -291,7 +292,7 @@ def test_requirements():
 
 
 def make_media_folders():
-    import config
+    from motioneye import config
     
     config.get_main()  # just to have main config already loaded
     
@@ -309,14 +310,14 @@ def make_media_folders():
 
 
 def start_motion():
-    import config
-    import motionctl
+    from motioneye import config
+    from motioneye import motionctl
 
-    io_loop = IOLoop.instance()
+    io_loop = IOLoop.current()
     
     # add a motion running checker
     def checker():
-        if io_loop._stopped:
+        if not io_loop.asyncio_loop.is_running():
             return
             
         if not motionctl.running() and motionctl.started() and config.get_enabled_local_motion_cameras():
@@ -326,7 +327,7 @@ def start_motion():
             
             except Exception as e:
                 logging.error('failed to start motion: %(msg)s' % {
-                        'msg': unicode(e)}, exc_info=True)
+                        'msg': str(e)}, exc_info=True)
 
         io_loop.add_timeout(datetime.timedelta(seconds=settings.MOTION_CHECK_INTERVAL), checker)
     
@@ -347,13 +348,13 @@ def parse_options(parser, args):
 
 
 def run():
-    import cleanup
-    import mjpgclient
-    import motionctl
+    from motioneye import cleanup
+    from motioneye import mjpgclient
+    from motioneye import motionctl
     import motioneye
-    import smbctl
-    import tasks
-    import wsswitch
+    from motioneye import smbctl
+    from motioneye import tasks
+    from motioneye import wsswitch
 
     configure_signals()
     logging.info('hello! this is motionEye server %s' % motioneye.VERSION)
@@ -395,7 +396,7 @@ def run():
     application.listen(settings.PORT, settings.LISTEN)
     logging.info('server started')
     
-    io_loop = IOLoop.instance()
+    io_loop = IOLoop.current()
     # we need to reset the loop's PID to fix PID checks when running in daemon mode
     io_loop._pid = os.getpid()
     io_loop.start()
@@ -421,7 +422,7 @@ def run():
 
 
 def main(parser, args, command):
-    import meyectl
+    from motioneye import meyectl
     
     options = parse_options(parser, args)
     

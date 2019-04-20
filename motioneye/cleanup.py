@@ -23,8 +23,8 @@ import signal
 
 from tornado.ioloop import IOLoop
 
-import mediafiles
-import settings
+from motioneye import mediafiles
+from motioneye import settings
 
 
 _process = None
@@ -35,7 +35,7 @@ def start():
         return
 
     # schedule the first call a bit later to improve performance at startup
-    io_loop = IOLoop.instance()
+    io_loop = IOLoop.current()
     io_loop.add_timeout(datetime.timedelta(seconds=min(settings.CLEANUP_INTERVAL, 60)), _run_process)
 
 
@@ -63,7 +63,7 @@ def running():
 def _run_process():
     global _process
     
-    io_loop = IOLoop.instance()
+    io_loop = IOLoop.current()
     
     # schedule the next call
     io_loop.add_timeout(datetime.timedelta(seconds=settings.CLEANUP_INTERVAL), _run_process)
@@ -89,4 +89,4 @@ def _do_cleanup():
          
     except Exception as e:
         logging.error('failed to cleanup media files: %(msg)s' % {
-                'msg': unicode(e)}, exc_info=True)
+                'msg': str(e)}, exc_info=True)

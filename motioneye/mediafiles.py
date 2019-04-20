@@ -27,7 +27,7 @@ import pipes
 import re
 import signal
 import stat
-import StringIO
+from io import StringIO
 import subprocess
 import time
 import zipfile
@@ -35,10 +35,10 @@ import zipfile
 from PIL import Image
 from tornado.ioloop import IOLoop
 
-import config
-import settings
-import utils
-import uploadservices
+from motioneye import settings
+from motioneye import utils
+from motioneye import uploadservices
+from motioneye import config
 
 
 _PICTURE_EXTS = ['.jpg']
@@ -127,7 +127,7 @@ def _list_media_files(directory, exts, prefix=None):
                 st = os.stat(full_path)
 
             except Exception as e:
-                logging.error('stat failed: ' + unicode(e))
+                logging.error('stat failed: ' + str(e))
                 continue
 
             if not stat.S_ISREG(st.st_mode):  # not a regular file
@@ -207,6 +207,7 @@ def find_ffmpeg():
     # binary
     try:
         binary = subprocess.check_output(['which', 'ffmpeg'], stderr=utils.DEV_NULL).strip()
+        binary = binary.decode()
 
     except subprocess.CalledProcessError:  # not found
         return None, None, None
@@ -214,6 +215,7 @@ def find_ffmpeg():
     # version
     try:
         output = subprocess.check_output(binary + ' -version', shell=True)
+        output = output.decode()
 
     except subprocess.CalledProcessError as e:
         logging.error('ffmpeg: could find version: %s' % e)
@@ -225,6 +227,7 @@ def find_ffmpeg():
     # codecs
     try:
         output = subprocess.check_output(binary + ' -codecs -hide_banner', shell=True)
+        output = output.decode()
 
     except subprocess.CalledProcessError as e:
         logging.error('ffmpeg: could not list supported codecs: %s' % e)
@@ -328,7 +331,7 @@ def make_movie_preview(camera_config, full_path):
 
     except subprocess.CalledProcessError as e:
         logging.error('failed to create movie preview for %(path)s: %(msg)s' % {
-                'path': full_path, 'msg': unicode(e)})
+                'path': full_path, 'msg': str(e)})
 
         return None
 
@@ -352,7 +355,7 @@ def make_movie_preview(camera_config, full_path):
 
         except subprocess.CalledProcessError as e:
             logging.error('failed to create movie preview for %(path)s: %(msg)s' % {
-                    'path': full_path, 'msg': unicode(e)})
+                    'path': full_path, 'msg': str(e)})
 
             return None
 
@@ -431,7 +434,7 @@ def list_media(camera_config, media_type, callback, prefix=None):
                 break
 
     def poll_process():
-        io_loop = IOLoop.instance()
+        io_loop = IOLoop.current()
         if process.is_alive():  # not finished yet
             now = datetime.datetime.now()
             delta = now - started
@@ -474,7 +477,7 @@ def get_media_content(camera_config, path, media_type):
 
     except Exception as e:
         logging.error('failed to read file %(path)s: %(msg)s' % {
-                'path': full_path, 'msg': unicode(e)})
+                'path': full_path, 'msg': str(e)})
 
         return None
 
@@ -549,7 +552,7 @@ def get_zipped_content(camera_config, media_type, group, callback):
     started = datetime.datetime.now()
 
     def poll_process():
-        io_loop = IOLoop.instance()
+        io_loop = IOLoop.current()
         if working.value:
             now = datetime.datetime.now()
             delta = now - started
@@ -628,7 +631,7 @@ def make_timelapse_movie(camera_config, framerate, interval, group):
                 break
 
     def poll_media_list_process():
-        io_loop = IOLoop.instance()
+        io_loop = IOLoop.current()
         if _timelapse_process.is_alive():  # not finished yet
             now = datetime.datetime.now()
             delta = now - started[0]
@@ -717,7 +720,7 @@ def make_timelapse_movie(camera_config, framerate, interval, group):
         global _timelapse_process
         global _timelapse_data
 
-        io_loop = IOLoop.instance()
+        io_loop = IOLoop.current()
         if _timelapse_process.poll() is None:  # not finished yet
             io_loop.add_timeout(datetime.timedelta(seconds=0.5), functools.partial(poll_movie_process, pictures))
 
@@ -813,14 +816,14 @@ def get_media_preview(camera_config, path, media_type, width, height):
 
     except Exception as e:
         logging.error('failed to read file %(path)s: %(msg)s' % {
-                'path': full_path, 'msg': unicode(e)})
+                'path': full_path, 'msg': str(e)})
 
         return None
 
     if width is height is None:
         return content
 
-    sio = StringIO.StringIO(content)
+    sio = StringIO(content)
     try:
         image = Image.open(sio)
 
@@ -833,7 +836,7 @@ def get_media_preview(camera_config, path, media_type, width, height):
 
     image.thumbnail((width, height), Image.LINEAR)
 
-    sio = StringIO.StringIO()
+    sio = StringIO()
     image.save(sio, format='JPEG')
 
     return sio.getvalue()
@@ -873,7 +876,7 @@ def del_media_content(camera_config, path, media_type):
 
     except Exception as e:
         logging.error('failed to remove file %(path)s: %(msg)s' % {
-                'path': full_path, 'msg': unicode(e)})
+                'path': full_path, 'msg': str(e)})
 
         raise
 
@@ -898,7 +901,7 @@ def del_media_group(camera_config, group, media_type):
 
         except Exception as e:
             logging.error('failed to remove file %(path)s: %(msg)s' % {
-                    'path': full_path, 'msg': unicode(e)})
+                    'path': full_path, 'msg': str(e)})
 
             raise
 
@@ -916,7 +919,7 @@ def del_media_group(camera_config, group, media_type):
 
 
 def get_current_picture(camera_config, width, height):
-    import mjpgclient
+    from motioneye import mjpgclient
 
     jpg = mjpgclient.get_jpg(camera_config['@id'])
 
@@ -926,7 +929,7 @@ def get_current_picture(camera_config, width, height):
     if width is height is None:
         return jpg  # no server-side resize needed
 
-    sio = StringIO.StringIO(jpg)
+    sio = StringIO(jpg)
     image = Image.open(sio)
 
     if width and width < 1:  # given as percent
@@ -949,7 +952,7 @@ def get_current_picture(camera_config, width, height):
 
     image.thumbnail((width, height), Image.CUBIC)
 
-    sio = StringIO.StringIO()
+    sio = StringIO()
     image.save(sio, format='JPEG')
 
     return sio.getvalue()
@@ -973,7 +976,7 @@ def set_prepared_cache(data):
 
     timeout = 3600  # the user has 1 hour to download the file after creation
 
-    io_loop = IOLoop.instance()
+    io_loop = IOLoop.current()
     io_loop.add_timeout(datetime.timedelta(seconds=timeout), clear)
 
     return key

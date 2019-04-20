@@ -55,15 +55,17 @@ setup(
 
         'License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)',
 
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.7'
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7'
     ],
 
     keywords='motion video surveillance frontend',
 
     packages=['motioneye'],
 
-    install_requires=['tornado>=3.1', 'jinja2', 'pillow', 'pycurl'],
+    install_requires=['tornado>=5.0', 'jinja2', 'pillow', 'pycurl'],
 
     package_data={
         'motioneye': [

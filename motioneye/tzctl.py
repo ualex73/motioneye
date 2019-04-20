@@ -18,10 +18,10 @@
 import hashlib
 import logging
 import os
-import settings
+from motioneye import settings
 import subprocess
 
-from config import additional_config
+from motioneye.config import additional_config
 
 
 LOCAL_TIME_FILE = settings.LOCAL_TIME_FILE  # @UndefinedVariable
@@ -36,7 +36,7 @@ def _get_time_zone_symlink():
     if not f:
         return None
     
-    for i in xrange(8):  # recursively follow the symlinks @UnusedVariable
+    for i in range(8):  # recursively follow the symlinks @UnusedVariable
         try:
             f = os.readlink(f)
 

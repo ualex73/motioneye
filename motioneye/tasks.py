@@ -16,7 +16,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 
 import calendar
-import cPickle
 import datetime
 import logging
 import multiprocessing
@@ -25,7 +24,7 @@ import time
 
 from tornado.ioloop import IOLoop
 
-import settings
+from motioneye import settings
 
 
 _INTERVAL = 2
@@ -43,7 +42,7 @@ _pool = None
 def start():
     global _pool
 
-    io_loop = IOLoop.instance()
+    io_loop = IOLoop.current()
     io_loop.add_timeout(datetime.timedelta(seconds=_INTERVAL), _check_tasks)
     
     def init_pool_process():
@@ -88,7 +87,7 @@ def add(when, func, tag=None, callback=None, **params):
 
 
 def _check_tasks():
-    io_loop = IOLoop.instance()
+    io_loop = IOLoop.current()
     io_loop.add_timeout(datetime.timedelta(seconds=_INTERVAL), _check_tasks)
     
     now = time.time()
@@ -124,7 +123,7 @@ def _load():
             return
         
         try:
-            _tasks = cPickle.load(f)
+            _tasks = pickle.load(f)
 
         except Exception as e:
             logging.error('could not read tasks from file "%s": %s' % (file_path, e))
@@ -149,7 +148,7 @@ def _save():
     try:
         # don't save tasks that have a callback
         tasks = [t for t in _tasks if not t[3]]
-        cPickle.dump(tasks, f)
+        pickle.dump(tasks, f)
 
     except Exception as e:
         logging.error('could not save tasks to file "%s": %s' % (file_path, e))

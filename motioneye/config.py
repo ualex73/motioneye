@@ -24,18 +24,18 @@ import os.path
 import re
 import shlex
 import subprocess
-import urlparse
+import urllib.parse as urlparse
 
 from tornado.ioloop import IOLoop
 
-import diskctl
-import motionctl
-import powerctl
-import settings
-import tasks
-import uploadservices
-import utils
-import v4l2ctl
+from motioneye import diskctl
+from motioneye import motionctl
+from motioneye import powerctl
+from motioneye import settings
+from motioneye import tasks
+from motioneye import uploadservices
+from motioneye import utils
+from motioneye import v4l2ctl
 
 _CAMERA_CONFIG_FILE_NAME = 'camera-%(id)s.conf'
 _MAIN_CONFIG_FILE_NAME = 'motion.conf'
@@ -169,8 +169,8 @@ def additional_config(func):
     _additional_config_funcs.append(func)
 
 
-import wifictl  # unused import
-import tzctl  # unused import
+from motioneye import wifictl  # unused import
+from motioneye import tzctl  # unused import
 
 
 def get_main(as_lines=False):
@@ -196,7 +196,7 @@ def get_main(as_lines=False):
 
         else:
             logging.error('could not open main config file %(path)s: %(msg)s' % {
-                'path': config_file_path, 'msg': unicode(e)})
+                'path': config_file_path, 'msg': str(e)})
 
             raise
 
@@ -206,7 +206,7 @@ def get_main(as_lines=False):
 
         except Exception as e:
             logging.error('could not read main config file %(path)s: %(msg)s' % {
-                'path': config_file_path, 'msg': unicode(e)})
+                'path': config_file_path, 'msg': str(e)})
 
             raise
 
@@ -234,7 +234,7 @@ def set_main(main_config):
     global _main_config_cache
 
     main_config = dict(main_config)
-    for n, v in _main_config_cache.iteritems():
+    for n, v in _main_config_cache.items():
         main_config.setdefault(n, v)
     _main_config_cache = main_config
 
@@ -258,18 +258,18 @@ def set_main(main_config):
 
     except Exception as e:
         logging.error('could not open main config file %(path)s for writing: %(msg)s' % {
-            'path': config_file_path, 'msg': unicode(e)})
+            'path': config_file_path, 'msg': str(e)})
 
         raise
 
     lines = _dict_to_conf(lines, main_config, list_names=['camera'])
 
     try:
-        f.writelines([utils.make_str(l) + '\n' for l in lines])
+        f.writelines([str(l) + '\n' for l in lines])
 
     except Exception as e:
         logging.error('could not write main config file %(path)s: %(msg)s' % {
-            'path': config_file_path, 'msg': unicode(e)})
+            'path': config_file_path, 'msg': str(e)})
 
         raise
 
@@ -292,7 +292,7 @@ def get_camera_ids(filter_valid=True):
 
     except Exception as e:
         logging.error('failed to list config dir %(path)s: %(msg)s', {
-            'path': config_path, 'msg': unicode(e)})
+            'path': config_path, 'msg': str(e)})
 
         raise
 
@@ -367,7 +367,7 @@ def get_camera(camera_id, as_lines=False):
         f = open(camera_config_path, 'r')
 
     except Exception as e:
-        logging.error('could not open camera config file: %(msg)s' % {'msg': unicode(e)})
+        logging.error('could not open camera config file: %(msg)s' % {'msg': str(e)})
 
         raise
 
@@ -376,7 +376,7 @@ def get_camera(camera_id, as_lines=False):
 
     except Exception as e:
         logging.error('could not read camera config file %(path)s: %(msg)s' % {
-            'path': camera_config_path, 'msg': unicode(e)})
+            'path': camera_config_path, 'msg': str(e)})
 
         raise
 
@@ -472,18 +472,18 @@ def set_camera(camera_id, camera_config):
 
     except Exception as e:
         logging.error('could not open camera config file %(path)s for writing: %(msg)s' % {
-            'path': camera_config_path, 'msg': unicode(e)})
+            'path': camera_config_path, 'msg': str(e)})
 
         raise
 
     lines = _dict_to_conf(lines, camera_config)
 
     try:
-        f.writelines([utils.make_str(l) + '\n' for l in lines])
+        f.writelines([str(l) + '\n' for l in lines])
 
     except Exception as e:
         logging.error('could not write camera config file %(path)s: %(msg)s' % {
-            'path': camera_config_path, 'msg': unicode(e)})
+            'path': camera_config_path, 'msg': str(e)})
 
         raise
 
@@ -614,7 +614,7 @@ def rem_camera(camera_id):
 
     except Exception as e:
         logging.error('could not remove camera config file %(path)s: %(msg)s' % {
-            'path': camera_config_path, 'msg': unicode(e)})
+            'path': camera_config_path, 'msg': str(e)})
 
         raise
 
@@ -655,7 +655,7 @@ def main_ui_to_dict(ui):
         call_hook(ui['normal_username'], ui['normal_password'])
 
     # additional configs
-    for name, value in ui.iteritems():
+    for name, value in ui.items():
         if not name.startswith('_'):
             continue
 
@@ -686,7 +686,7 @@ def main_dict_to_ui(data):
         ui['normal_password'] = ''
 
     # additional configs
-    for name, value in data.iteritems():
+    for name, value in data.items():
         if not name.startswith('@_'):
             continue
 
@@ -696,8 +696,8 @@ def main_dict_to_ui(data):
 
 
 def motion_camera_ui_to_dict(ui, prev_config=None):
-    import meyectl
-    import smbctl
+    from motioneye import meyectl
+    from motioneye import smbctl
 
     prev_config = dict(prev_config or {})
     main_config = get_main()  # needed for surveillance password
@@ -1037,7 +1037,7 @@ def motion_camera_ui_to_dict(ui, prev_config=None):
     data['on_picture_save'] = '; '.join(on_picture_save)
 
     # additional configs
-    for name, value in ui.iteritems():
+    for name, value in ui.items():
         if not name.startswith('_'):
             continue
 
@@ -1058,7 +1058,7 @@ def motion_camera_ui_to_dict(ui, prev_config=None):
 
 
 def motion_camera_dict_to_ui(data):
-    import smbctl
+    from motioneye import smbctl
 
     ui = {
         # device
@@ -1469,7 +1469,7 @@ def motion_camera_dict_to_ui(data):
         ui['command_storage_exec'] = '; '.join(command_storage)
 
     # additional configs
-    for name, value in data.iteritems():
+    for name, value in data.items():
         if not name.startswith('@_'):
             continue
 
@@ -1477,7 +1477,7 @@ def motion_camera_dict_to_ui(data):
 
     # extra motion options
     extra_options = []
-    for name, value in data.iteritems():
+    for name, value in data.items():
         if name not in _USED_MOTION_OPTIONS and not name.startswith('@'):
             if isinstance(value, bool):
                 value = ['off', 'on'][value]  # boolean values should be transferred as on/off
@@ -1488,7 +1488,7 @@ def motion_camera_dict_to_ui(data):
 
     # action commands
     action_commands = get_action_commands(data)
-    ui['actions'] = action_commands.keys()
+    ui['actions'] = list(action_commands.keys())
 
     return ui
 
@@ -1503,7 +1503,7 @@ def simple_mjpeg_camera_ui_to_dict(ui, prev_config=None):
     }
 
     # additional configs
-    for name, value in ui.iteritems():
+    for name, value in ui.items():
         if not name.startswith('_'):
             continue
 
@@ -1524,7 +1524,7 @@ def simple_mjpeg_camera_dict_to_ui(data):
     }
 
     # additional configs
-    for name, value in data.iteritems():
+    for name, value in data.items():
         if not name.startswith('@_'):
             continue
 
@@ -1532,7 +1532,7 @@ def simple_mjpeg_camera_dict_to_ui(data):
 
     # action commands
     action_commands = get_action_commands(data)
-    ui['actions'] = action_commands.keys()
+    ui['actions'] = list(action_commands.keys())
 
     return ui
 
@@ -1630,7 +1630,7 @@ def restore(content):
             def later():
                 powerctl.reboot()
 
-            io_loop = IOLoop.instance()
+            io_loop = IOLoop.current()
             io_loop.add_timeout(datetime.timedelta(seconds=2), later)
 
         else:
@@ -1797,7 +1797,7 @@ def _dict_to_conf(lines, data, list_names=None):
     if len(remaining) and len(lines):
         conf_lines.append('')  # add a blank line
 
-    for (name, value) in remaining.iteritems():
+    for (name, value) in remaining.items():
         if name.startswith('@_'):
             continue  # ignore additional configs
 
@@ -1975,8 +1975,8 @@ def get_additional_structure(camera, separators=False):
             if bool(result.get('camera')) != bool(camera):
                 continue
 
-            result['name'] = func.func_name
-            sections[func.func_name] = result
+            result['name'] = func.__name__
+            sections[func.__name__] = result
 
             logging.debug('additional config section: %s' % result['name'])
 
@@ -1995,8 +1995,8 @@ def get_additional_structure(camera, separators=False):
             if result['type'] == 'separator' and not separators:
                 continue
 
-            result['name'] = func.func_name
-            configs[func.func_name] = result
+            result['name'] = func.__name__
+            configs[func.__name__] = result
 
             section = sections.setdefault(result.get('section'), {})
             section.setdefault('configs', []).append(result)
@@ -2012,10 +2012,10 @@ def _get_additional_config(data, camera_id=None):
     args = [camera_id] if camera_id else []
 
     (sections, configs) = get_additional_structure(camera=bool(camera_id))
-    get_funcs = set([c.get('get') for c in configs.itervalues() if c.get('get')])
+    get_funcs = set([c.get('get') for c in configs.values() if c.get('get')])
     get_func_values = collections.OrderedDict((f, f(*args)) for f in get_funcs)
 
-    for name, section in sections.iteritems():
+    for name, section in sections.items():
         if not section.get('get'):
             continue
 
@@ -2025,7 +2025,7 @@ def _get_additional_config(data, camera_id=None):
         else:
             data['@_' + name] = get_func_values.get(section['get'])
 
-    for name, config in configs.iteritems():
+    for name, config in configs.items():
         if not config.get('get'):
             continue
 
@@ -2042,7 +2042,7 @@ def _set_additional_config(data, camera_id=None):
     (sections, configs) = get_additional_structure(camera=bool(camera_id))
 
     set_func_values = collections.OrderedDict()
-    for name, section in sections.iteritems():
+    for name, section in sections.items():
         if not section.get('set'):
             continue
 
@@ -2055,7 +2055,7 @@ def _set_additional_config(data, camera_id=None):
         else:
             set_func_values[section['set']] = data['@_' + name]
 
-    for name, config in configs.iteritems():
+    for name, config in configs.items():
         if not config.get('set'):
             continue
 
@@ -2068,5 +2068,5 @@ def _set_additional_config(data, camera_id=None):
         else:
             set_func_values[config['set']] = data['@_' + name]
 
-    for func, value in set_func_values.iteritems():
+    for func, value in set_func_values.items():
         func(*(args + [value]))

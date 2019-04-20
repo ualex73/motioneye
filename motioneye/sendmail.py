@@ -24,7 +24,7 @@ import smtplib
 import socket
 import time
 
-from email import Encoders
+from email import encoders
 from email.mime.text import MIMEText
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEBase import MIMEBase
@@ -32,12 +32,12 @@ from email.Utils import formatdate
 
 from tornado.ioloop import IOLoop
 
-import settings
+from motioneye import settings
 
-import config
-import mediafiles
-import motionctl
-import tzctl
+from motioneye import config
+from motioneye import mediafiles
+from motioneye import motionctl
+from motioneye import tzctl
 
 
 messages = {
@@ -85,7 +85,7 @@ def make_message(subject, message, camera_id, moment, timespan, callback):
     camera_config = config.get_camera(camera_id)
     
     # we must start the IO loop for the media list subprocess polling
-    io_loop = IOLoop.instance()
+    io_loop = IOLoop.current()
 
     def on_media_files(media_files):
         io_loop.stop()
@@ -164,7 +164,7 @@ def parse_options(parser, args):
     
 
 def main(parser, args):
-    import meyectl
+    from motioneye import meyectl
     
     # the motion daemon overrides SIGCHLD,
     # so we must restore it here,

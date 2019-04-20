@@ -17,10 +17,9 @@
 
 import json
 import logging
-import urllib2
-import urlparse
+import urllib.parse as urlparse
 
-import settings
+from motioneye import settings
 
 
 def parse_options(parser, args):
@@ -31,8 +30,8 @@ def parse_options(parser, args):
 
 
 def main(parser, args):
-    import meyectl
-    import utils
+    from motioneye import meyectl
+    from motioneye import utils
     
     options = parse_options(parser, args)
     
@@ -67,7 +66,7 @@ def main(parser, args):
     else:  # GET
         pass
 
-    request = urllib2.Request(url, data, headers=headers)
+    request = urllib.Request(url, data, headers=headers)
     try:
         utils.urlopen(request, timeout=settings.REMOTE_REQUEST_TIMEOUT)
         logging.debug('webhook successfully called')
