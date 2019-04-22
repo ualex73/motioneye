@@ -48,6 +48,10 @@ from motioneye import v4l2ctl
 
 
 class BaseHandler(RequestHandler):
+
+    def initialize(self):
+        self._auto_finish = False
+
     def get_all_arguments(self):
         keys = self.request.arguments.keys()
         arguments = dict([(key, self.get_argument(key)) for key in keys])
