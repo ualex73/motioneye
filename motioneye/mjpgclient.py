@@ -24,6 +24,7 @@ import time
 
 from tornado.ioloop import IOLoop
 from tornado.iostream import IOStream
+from tornado.concurrent import future_add_done_callback
 
 from motioneye import config
 from motioneye import motionctl
@@ -55,7 +56,8 @@ class MjpgClient(IOStream):
         self.set_close_callback(self.on_close)
         
     def do_connect(self):
-        IOStream.connect(self, ('localhost', self._port), self._on_connect)
+        future = IOStream.connect(self, ('localhost', self._port))
+        future_add_done_callback(future, self._on_connect)
 
     def get_port(self):
         return self._port
@@ -131,7 +133,7 @@ class MjpgClient(IOStream):
         except:
             pass
     
-    def _on_connect(self):
+    def _on_connect(self, future):
         logging.debug('mjpg client for camera %(camera_id)s connected on port %(port)s' % {
                 'port': self._port, 'camera_id': self._camera_id})
 
@@ -139,13 +141,13 @@ class MjpgClient(IOStream):
             logging.debug('mjpg client using basic authentication')
 
             auth_header = utils.build_basic_header(self._username, self._password)
-            self.write(('GET / HTTP/1.1\r\nAuthorization: %s\r\nConnection: close\r\n\r\n' % auth_header).encode('utf-8'))
+            self.write(b'GET / HTTP/1.1\r\nAuthorization: %s\r\nConnection: close\r\n\r\n' % auth_header)
 
         elif self._auth_mode == 'digest':  # in digest auth mode, the header is built upon receiving 401
-            self.write('GET / HTTP/1.1\r\n\r\n'.encode('utf-8'))
+            self.write(b'GET / HTTP/1.1\r\n\r\n')
             
         else:  # no authentication
-            self.write('GET / HTTP/1.1\r\nConnection: close\r\n\r\n'.encode('utf-8'))
+            self.write(b'GET / HTTP/1.1\r\nConnection: close\r\n\r\n')
 
         self._seek_http()
 
@@ -153,9 +155,15 @@ class MjpgClient(IOStream):
         if self._check_error():
             return
         
-        self.read_until_regex(b'HTTP/1.\d \d+ ', self._on_http)
+        future = self.read_until_regex(b'HTTP/1.\d \d+ ')
+        future_add_done_callback(future, self._on_http)
 
-    def _on_http(self, data):
+    def _on_http(self, future):
+        if future.exception():
+            return
+
+        data = future.result()
+
         if data.endswith(b'401 '):
             self._seek_www_authenticate()
 
@@ -166,15 +174,21 @@ class MjpgClient(IOStream):
         if self._check_error():
             return
         
-        self.read_until(b'WWW-Authenticate:', self._on_before_www_authenticate)
+        future = self.read_until(b'WWW-Authenticate:')
+        future_add_done_callback(future, self._on_before_www_authenticate)
 
-    def _on_before_www_authenticate(self, data):
+    def _on_before_www_authenticate(self, future):
+        data = future.result()
+
         if self._check_error():
             return
         
-        self.read_until(b'\r\n', self._on_www_authenticate)
+        future = self.read_until(b'\r\n')
+        future_add_done_callback(future, self._on_www_authenticate)
     
-    def _on_www_authenticate(self, data):
+    def _on_www_authenticate(self, future):
+        data = future.result()
+
         if self._check_error():
             return
 
@@ -185,12 +199,12 @@ class MjpgClient(IOStream):
             logging.debug('mjpg client using basic authentication')
             
             auth_header = utils.build_basic_header(self._username, self._password)
-            self.write('GET / HTTP/1.1\r\nAuthorization: %s\r\nConnection: close\r\n\r\n' % auth_header)
+            self.write(b'GET / HTTP/1.1\r\nAuthorization: %s\r\nConnection: close\r\n\r\n' % auth_header)
             self._seek_http()
 
             return
 
-        if data.startswith('Digest'):
+        if data.startswith(b'Digest'):
             logging.debug('mjpg client using digest authentication')
 
             parts = data[7:].split(',')
@@ -200,7 +214,7 @@ class MjpgClient(IOStream):
             self._auth_digest_state = parts_dict
 
             auth_header = utils.build_digest_header('GET', '/', self._username, self._password, self._auth_digest_state)
-            self.write('GET / HTTP/1.1\r\nAuthorization: %s\r\nConnection: close\r\n\r\n' % auth_header)
+            self.write(b'GET / HTTP/1.1\r\nAuthorization: %s\r\nConnection: close\r\n\r\n' % auth_header)
             self._seek_http()
             
             return
@@ -212,15 +226,21 @@ class MjpgClient(IOStream):
         if self._check_error():
             return
         
-        self.read_until(b'Content-Length:', self._on_before_content_length)
+        future = self.read_until(b'Content-Length:')
+        future_add_done_callback(future, self._on_before_content_length)
     
-    def _on_before_content_length(self, data):
+    def _on_before_content_length(self, future):
+        data = future.result()
+
         if self._check_error():
             return
         
-        self.read_until(b'\r\n\r\n', self._on_content_length)
+        future = self.read_until(b'\r\n\r\n')
+        future_add_done_callback(future, self._on_content_length)
     
-    def _on_content_length(self, data):
+    def _on_content_length(self, future):
+        data = future.result()
+
         if self._check_error():
             return
         
@@ -233,9 +253,12 @@ class MjpgClient(IOStream):
         
         length = int(matches[0])
         
-        self.read_bytes(length, self._on_jpg)
+        future = self.read_bytes(length)
+        future_add_done_callback(future, self._on_jpg)
     
-    def _on_jpg(self, data):
+    def _on_jpg(self, future):
+        data = future.result()
+
         self._last_jpg = data
         self._last_jpg_times.append(time.time())
         while len(self._last_jpg_times) > self._FPS_LEN:

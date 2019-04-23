@@ -99,10 +99,6 @@ class BaseHandler(RequestHandler):
     def finish(self, chunk=None):
         import motioneye
 
-        if chunk == None:
-            print('Chunk is None --------------------------')
-            return
-
         self.set_header('Server', 'motionEye/%s' % motioneye.VERSION)
         RequestHandler.finish(self, chunk=chunk)
 
@@ -268,7 +264,6 @@ class ManifestHandler(BaseHandler):
 
 
 class ConfigHandler(BaseHandler):
-    @asynchronous
     def get(self, camera_id=None, op=None):
         config.invalidate_monitor_commands()
 
@@ -290,7 +285,6 @@ class ConfigHandler(BaseHandler):
         else:
             raise HTTPError(400, 'unknown operation')
     
-    @asynchronous
     def post(self, camera_id=None, op=None):
         if camera_id is not None:
             camera_id = int(camera_id)
@@ -910,7 +904,6 @@ class ConfigHandler(BaseHandler):
 
 
 class PictureHandler(BaseHandler):
-    @asynchronous
     def get(self, camera_id, op, filename=None, group=None):
         if camera_id is not None:
             camera_id = int(camera_id)
@@ -941,7 +934,6 @@ class PictureHandler(BaseHandler):
         else:
             raise HTTPError(400, 'unknown operation')
     
-    @asynchronous
     def post(self, camera_id, op, filename=None, group=None):
         if group == '/':  # ungrouped
             group = ''
@@ -1392,7 +1384,6 @@ class PictureHandler(BaseHandler):
 
 
 class MovieHandler(BaseHandler):
-    @asynchronous
     def get(self, camera_id, op, filename=None):
         if camera_id is not None:
             camera_id = int(camera_id)
@@ -1408,7 +1399,6 @@ class MovieHandler(BaseHandler):
         else:
             raise HTTPError(400, 'unknown operation')
     
-    @asynchronous
     def post(self, camera_id, op, filename=None, group=None):
         if group == '/':  # ungrouped
             group = ''
@@ -1560,7 +1550,6 @@ class MoviePlaybackHandler(StaticFileHandler, BaseHandler):
     if not os.path.exists(tmpdir):
         os.mkdir(tmpdir)
 
-    @asynchronous
     @BaseHandler.auth()
     def get(self,  camera_id, filename=None, include_body=True):
         logging.debug('downloading movie %(filename)s of camera %(id)s' % {
@@ -1638,7 +1627,6 @@ class MovieDownloadHandler(MoviePlaybackHandler):
 
 
 class ActionHandler(BaseHandler):
-    @asynchronous
     def post(self, camera_id, action):
         camera_id = int(camera_id)
         if camera_id not in config.get_camera_ids():

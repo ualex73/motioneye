@@ -33,6 +33,7 @@ from PIL import Image, ImageDraw
 from tornado.httpclient import AsyncHTTPClient, HTTPRequest
 from tornado.iostream import IOStream
 from tornado.ioloop import IOLoop
+from tornado.concurrent import future_add_done_callback
 
 from motioneye import settings
 
@@ -288,7 +289,7 @@ def get_disk_usage(path):
         result = os.statvfs(path)
     
     except OSError as e:
-        logging.error('failed to execute statvfs: %(msg)s' % {'msg': unicode(e)})
+        logging.error('failed to execute statvfs: %(msg)s' % {'msg': str(e)})
         
         return None
 
@@ -367,7 +368,8 @@ def test_mjpeg_url(data, auth_modes, allow_jpeg, callback):
                               header_callback=on_header, validate_cert=settings.VALIDATE_CERTS)
 
         http_client = AsyncHTTPClient(force_instance=True)
-        http_client.fetch(request, on_response)
+        future = http_client.fetch(request, on_response)
+        future_add_done_callback(future, on_response)
 
     def on_header(header):
         header = header.lower()
@@ -394,7 +396,14 @@ def test_mjpeg_url(data, auth_modes, allow_jpeg, callback):
                 if m.group(1) == '1':
                     http_11[0] = True
 
-    def on_response(response):
+    def on_response(future):
+
+        if future.exception():
+            callback(error=str(future.exception()))
+            return
+
+        response = future.result()
+ 
         if not called[0]:
             if response.code == 401 and auth_modes and data['username']:
                 status_2xx[0] = False
@@ -444,15 +453,15 @@ def test_rtsp_url(data, callback):
         s.settimeout(settings.MJPG_CLIENT_TIMEOUT)
         stream = IOStream(s)
         stream.set_close_callback(on_close)
-        cfut = stream.connect((host, int(port)))
-        cfut.add_done_callback(functools.partial(on_connect, False))
+        future = stream.connect((host, int(port)))
+        future_add_done_callback(future, functools.partial(on_connect, False))
 
         timeout[0] = io_loop.add_timeout(datetime.timedelta(seconds=settings.MJPG_CLIENT_TIMEOUT),
                                          functools.partial(on_connect, True, None))
         
         return stream
     
-    def on_connect(_timeout=False, cfut=None):
+    def on_connect(_timeout=False, future=None):
         io_loop.remove_timeout(timeout[0])
         
         if _timeout:
@@ -486,10 +495,14 @@ def test_rtsp_url(data, callback):
         if check_error():
             return
 
-        stream.read_until_regex(b'RTSP/1.0 \d+ ', on_rtsp)
+        future = stream.read_until_regex(b'RTSP/1.0 \d+ ')
+        future_add_done_callback(future, on_rtsp)
+
         timeout[0] = io_loop.add_timeout(datetime.timedelta(seconds=settings.MJPG_CLIENT_TIMEOUT), on_rtsp)
 
-    def on_rtsp(data=None):
+    def on_rtsp(future):
+        data = future.result()
+
         io_loop.remove_timeout(timeout[0])
 
         if data:
@@ -514,10 +527,14 @@ def test_rtsp_url(data, callback):
         if check_error():
             return
 
-        stream.read_until_regex(b'Server: .*', on_server)
+        future = stream.read_until_regex(b'Server: .*')
+        future_add_done_callback(future, on_server)
+
         timeout[0] = io_loop.add_timeout(datetime.timedelta(seconds=1), on_server)
 
-    def on_server(data=None):
+    def on_server(future):
+        data = future.result()
+
         io_loop.remove_timeout(timeout[0])
 
         if data:
@@ -534,10 +551,14 @@ def test_rtsp_url(data, callback):
         if check_error():
             return
 
-        stream.read_until_regex(b'WWW-Authenticate: .*', on_www_authenticate)
+        future = stream.read_until_regex(b'WWW-Authenticate: .*')
+        future_add_done_callback(future, on_www_authenticate)
+
         timeout[0] = io_loop.add_timeout(datetime.timedelta(seconds=1), on_www_authenticate)
 
-    def on_www_authenticate(data=None):
+    def on_www_authenticate(future):
+        data = future.result()
+
         io_loop.remove_timeout(timeout[0])
 
         if data:
@@ -584,7 +605,7 @@ def test_rtsp_url(data, callback):
             return
         
         called[0] = True
-        logging.error('rtsp client error: %s' % unicode(e))
+        logging.error('rtsp client error: %s' % str(e))
 
         try:
             stream.close()
@@ -592,7 +613,7 @@ def test_rtsp_url(data, callback):
         except:
             pass
         
-        callback(error=unicode(e))
+        callback(error=str(e))
 
     def check_error():
         error = getattr(stream, 'error', None)
