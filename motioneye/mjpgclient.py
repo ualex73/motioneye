@@ -257,6 +257,9 @@ class MjpgClient(IOStream):
         future_add_done_callback(future, self._on_jpg)
     
     def _on_jpg(self, future):
+        if future.exception():
+            return
+
         data = future.result()
 
         self._last_jpg = data
