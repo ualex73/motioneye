@@ -184,9 +184,13 @@ def configure_logging(cmd, log_to_file=False):
 
 
 def configure_tornado():
+    import asyncio
     from tornado.httpclient import AsyncHTTPClient
+    from tornado.platform.asyncio import AnyThreadEventLoopPolicy
 
     AsyncHTTPClient.configure('tornado.curl_httpclient.CurlAsyncHTTPClient', max_clients=16)
+
+    asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
 
 
 def make_arg_parser(command=None):

@@ -24,6 +24,7 @@ import subprocess
 import time
 
 from tornado.ioloop import IOLoop
+from tornado.concurrent import future_add_done_callback
 
 from motioneye import mediafiles
 from motioneye import powerctl
@@ -226,7 +227,12 @@ def get_motion_detection(camera_id, callback):
     url = 'http://127.0.0.1:%(port)s/%(id)s/detection/status' % {
             'port': settings.MOTION_CONTROL_PORT, 'id': motion_camera_id}
     
-    def on_response(response):
+    def on_response(future):
+        if future.exception():
+            return
+
+        response = future.result()
+
         if response.error:
             return callback(error=utils.pretty_http_error(response))
 
@@ -240,7 +246,8 @@ def get_motion_detection(camera_id, callback):
 
     request = HTTPRequest(url, connect_timeout=_MOTION_CONTROL_TIMEOUT, request_timeout=_MOTION_CONTROL_TIMEOUT)
     http_client = AsyncHTTPClient()
-    http_client.fetch(request, callback=on_response)
+    future = http_client.fetch(request)
+    future_add_done_callback(future, on_response)
 
 
 def set_motion_detection(camera_id, enabled):
@@ -262,7 +269,12 @@ def set_motion_detection(camera_id, enabled):
             'id': motion_camera_id,
             'enabled': ['pause', 'start'][enabled]}
     
-    def on_response(response):
+    def on_response(future):
+        if future.exception():
+            return
+
+        response = future.result()
+
         if response.error:
             logging.error('failed to %(what)s motion detection for camera with id %(id)s: %(msg)s' % {
                     'what': ['disable', 'enable'][enabled],
@@ -276,7 +288,8 @@ def set_motion_detection(camera_id, enabled):
 
     request = HTTPRequest(url, connect_timeout=_MOTION_CONTROL_TIMEOUT, request_timeout=_MOTION_CONTROL_TIMEOUT)
     http_client = AsyncHTTPClient()
-    http_client.fetch(request, on_response)
+    future = http_client.fetch(request)
+    future_add_done_callback(future, on_response)
 
 
 def take_snapshot(camera_id):
@@ -292,7 +305,12 @@ def take_snapshot(camera_id):
             'port': settings.MOTION_CONTROL_PORT,
             'id': motion_camera_id}
 
-    def on_response(response):
+    def on_response(future):
+        if future.exception():
+            return
+
+        response = future.result()
+
         if response.error:
             logging.error('failed to take snapshot for camera with id %(id)s: %(msg)s' % {
                     'id': camera_id,
@@ -303,7 +321,8 @@ def take_snapshot(camera_id):
 
     request = HTTPRequest(url, connect_timeout=_MOTION_CONTROL_TIMEOUT, request_timeout=_MOTION_CONTROL_TIMEOUT)
     http_client = AsyncHTTPClient()
-    http_client.fetch(request, on_response)
+    future = http_client.fetch(request)
+    future_add_done_callback(future, on_response)
 
 
 def is_motion_detected(camera_id):

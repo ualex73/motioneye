@@ -21,6 +21,7 @@ import logging
 import re
 
 from tornado.httpclient import AsyncHTTPClient, HTTPRequest
+from tornado.concurrent import future_add_done_callback
 
 from motioneye import settings
 from motioneye import utils
@@ -205,7 +206,8 @@ def get_config(local_config, callback):
         callback(response)
     
     http_client = AsyncHTTPClient()
-    http_client.fetch(request, _callback_wrapper(on_response))
+    future = http_client.fetch(request)
+    future_add_done_callback(future, _callback_wrapper(on_response))
     
 
 def set_config(local_config, ui_config, callback):
@@ -239,7 +241,8 @@ def set_config(local_config, ui_config, callback):
         callback()
 
     http_client = AsyncHTTPClient()
-    http_client.fetch(request, _callback_wrapper(on_response))
+    future = http_client.fetch(request)
+    future_add_done_callback(future, _callback_wrapper(on_response))
 
 
 def test(local_config, data, callback):
@@ -269,7 +272,8 @@ def test(local_config, data, callback):
         callback()
 
     http_client = AsyncHTTPClient()
-    http_client.fetch(request, _callback_wrapper(on_response))
+    future = http_client.fetch(request)
+    future_add_done_callback(future, _callback_wrapper(on_response))
 
 
 def get_current_picture(local_config, width, height, callback):
@@ -308,7 +312,8 @@ def get_current_picture(local_config, width, height, callback):
         callback(motion_detected, capture_fps, monitor_info, response.body)
     
     http_client = AsyncHTTPClient()
-    http_client.fetch(request, _callback_wrapper(on_response))
+    future = http_client.fetch(request)
+    future_add_done_callback(future, _callback_wrapper(on_response))
 
 
 def list_media(local_config, media_type, prefix, callback):
@@ -349,7 +354,8 @@ def list_media(local_config, media_type, prefix, callback):
         return callback(response)
     
     http_client = AsyncHTTPClient()
-    http_client.fetch(request, _callback_wrapper(on_response))
+    future = http_client.fetch(request)
+    future_add_done_callback(future, _callback_wrapper(on_response))
 
 
 def get_media_content(local_config, filename, media_type, callback):
@@ -382,7 +388,8 @@ def get_media_content(local_config, filename, media_type, callback):
         return callback(response.body)
 
     http_client = AsyncHTTPClient()
-    http_client.fetch(request, _callback_wrapper(on_response))
+    future = http_client.fetch(request)
+    future_add_done_callback(future, _callback_wrapper(on_response))
 
 
 def make_zipped_content(local_config, media_type, group, callback):
@@ -428,7 +435,8 @@ def make_zipped_content(local_config, media_type, group, callback):
         callback({'key': key})
 
     http_client = AsyncHTTPClient()
-    http_client.fetch(request, _callback_wrapper(on_response))
+    future = http_client.fetch(request)
+    future_add_done_callback(future, _callback_wrapper(on_response))
 
 
 def get_zipped_content(local_config, media_type, key, group, callback):
@@ -463,7 +471,8 @@ def get_zipped_content(local_config, media_type, key, group, callback):
         })
 
     http_client = AsyncHTTPClient()
-    http_client.fetch(request, _callback_wrapper(on_response))
+    future = http_client.fetch(request)
+    future_add_done_callback(future, _callback_wrapper(on_response))
 
 
 def make_timelapse_movie(local_config, framerate, interval, group, callback):
@@ -516,7 +525,8 @@ def make_timelapse_movie(local_config, framerate, interval, group, callback):
         callback(response)
 
     http_client = AsyncHTTPClient()
-    http_client.fetch(request, _callback_wrapper(on_response))
+    future = http_client.fetch(request)
+    future_add_done_callback(future, _callback_wrapper(on_response))
 
 
 def check_timelapse_movie(local_config, group, callback):
@@ -553,7 +563,8 @@ def check_timelapse_movie(local_config, group, callback):
         callback(response)
 
     http_client = AsyncHTTPClient()
-    http_client.fetch(request, _callback_wrapper(on_response))
+    future = http_client.fetch(request)
+    future_add_done_callback(future, _callback_wrapper(on_response))
 
 
 def get_timelapse_movie(local_config, key, group, callback):
@@ -587,7 +598,8 @@ def get_timelapse_movie(local_config, key, group, callback):
         })
 
     http_client = AsyncHTTPClient()
-    http_client.fetch(request, _callback_wrapper(on_response))
+    future = http_client.fetch(request)
+    future_add_done_callback(future, _callback_wrapper(on_response))
 
 
 def get_media_preview(local_config, filename, media_type, width, height, callback):
@@ -626,7 +638,8 @@ def get_media_preview(local_config, filename, media_type, width, height, callbac
         callback(response.body)
 
     http_client = AsyncHTTPClient()
-    http_client.fetch(request, _callback_wrapper(on_response))
+    future = http_client.fetch(request)
+    future_add_done_callback(future, _callback_wrapper(on_response))
 
 
 def del_media_content(local_config, filename, media_type, callback):
@@ -658,7 +671,8 @@ def del_media_content(local_config, filename, media_type, callback):
         callback()
 
     http_client = AsyncHTTPClient()
-    http_client.fetch(request, _callback_wrapper(on_response))
+    future = http_client.fetch(request)
+    future_add_done_callback(future, _callback_wrapper(on_response))
 
 
 def del_media_group(local_config, group, media_type, callback):
@@ -690,7 +704,8 @@ def del_media_group(local_config, group, media_type, callback):
         callback()
 
     http_client = AsyncHTTPClient()
-    http_client.fetch(request, _callback_wrapper(on_response))
+    future = http_client.fetch(request)
+    future_add_done_callback(future, _callback_wrapper(on_response))
 
 
 def exec_action(local_config, action, callback):
@@ -721,4 +736,6 @@ def exec_action(local_config, action, callback):
         callback()
 
     http_client = AsyncHTTPClient()
-    http_client.fetch(request, _callback_wrapper(on_response))
+    future = http_client.fetch(request)
+    future_add_done_callback(future, _callback_wrapper(on_response))
+

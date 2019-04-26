@@ -17,7 +17,6 @@
 
 import base64
 import datetime
-import functools
 import hashlib
 import logging
 import os
@@ -368,7 +367,7 @@ def test_mjpeg_url(data, auth_modes, allow_jpeg, callback):
                               header_callback=on_header, validate_cert=settings.VALIDATE_CERTS)
 
         http_client = AsyncHTTPClient(force_instance=True)
-        future = http_client.fetch(request, on_response)
+        future = http_client.fetch(request)
         future_add_done_callback(future, on_response)
 
     def on_header(header):
@@ -454,19 +453,21 @@ def test_rtsp_url(data, callback):
         stream = IOStream(s)
         stream.set_close_callback(on_close)
         future = stream.connect((host, int(port)))
-        future_add_done_callback(future, functools.partial(on_connect, False))
+        future_add_done_callback(future, on_connect)
 
         timeout[0] = io_loop.add_timeout(datetime.timedelta(seconds=settings.MJPG_CLIENT_TIMEOUT),
-                                         functools.partial(on_connect, True, None))
+                                         on_connect_timeout)
         
         return stream
+
+
+    def on_connect_timeout():
+        io_loop.remove_timeout(timeout[0])
+        return handle_error('timeout connecting to rtsp netcam')
     
-    def on_connect(_timeout=False, future=None):
+    def on_connect(future):
         io_loop.remove_timeout(timeout[0])
         
-        if _timeout:
-            return handle_error('timeout connecting to rtsp netcam')
-
         if not stream:
             return handle_error('failed to connect to rtsp netcam') 
 
@@ -498,7 +499,12 @@ def test_rtsp_url(data, callback):
         future = stream.read_until_regex(b'RTSP/1.0 \d+ ')
         future_add_done_callback(future, on_rtsp)
 
-        timeout[0] = io_loop.add_timeout(datetime.timedelta(seconds=settings.MJPG_CLIENT_TIMEOUT), on_rtsp)
+        timeout[0] = io_loop.add_timeout(datetime.timedelta(seconds=settings.MJPG_CLIENT_TIMEOUT), on_rtsp_timeout)
+
+    def on_rtsp_timeout():
+        io_loop.remove_timeout(timeout[0])
+        handle_error('timeout waiting for rtsp netcam response')
+
 
     def on_rtsp(future):
         data = future.result()
@@ -530,7 +536,16 @@ def test_rtsp_url(data, callback):
         future = stream.read_until_regex(b'Server: .*')
         future_add_done_callback(future, on_server)
 
-        timeout[0] = io_loop.add_timeout(datetime.timedelta(seconds=1), on_server)
+        timeout[0] = io_loop.add_timeout(datetime.timedelta(seconds=1), on_server_timeout)
+
+    def on_server_timeout():
+        io_loop.remove_timeout(timeout[0])
+
+        identifier = None
+        logging.debug('no rtsp netcam identifier')
+
+        handle_success(identifier)
+
 
     def on_server(future):
         data = future.result()
@@ -554,7 +569,13 @@ def test_rtsp_url(data, callback):
         future = stream.read_until_regex(b'WWW-Authenticate: .*')
         future_add_done_callback(future, on_www_authenticate)
 
-        timeout[0] = io_loop.add_timeout(datetime.timedelta(seconds=1), on_www_authenticate)
+        timeout[0] = io_loop.add_timeout(datetime.timedelta(seconds=1), on_www_authenticate_timeout)
+
+    def on_www_authenticate_timeout():
+        io_loop.remove_timeout(timeout[0])
+        logging.error('timeout waiting for rtsp auth scheme')
+        handle_error('timeout waiting for rtsp netcam response')
+
 
     def on_www_authenticate(future):
         data = future.result()

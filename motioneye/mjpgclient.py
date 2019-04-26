@@ -178,19 +178,19 @@ class MjpgClient(IOStream):
         future_add_done_callback(future, self._on_before_www_authenticate)
 
     def _on_before_www_authenticate(self, future):
-        data = future.result()
-
         if self._check_error():
             return
+
+        data = future.result()
         
         future = self.read_until(b'\r\n')
         future_add_done_callback(future, self._on_www_authenticate)
     
     def _on_www_authenticate(self, future):
-        data = future.result()
-
         if self._check_error():
             return
+
+        data = future.result()
 
         data = data.strip()
         
@@ -230,10 +230,10 @@ class MjpgClient(IOStream):
         future_add_done_callback(future, self._on_before_content_length)
     
     def _on_before_content_length(self, future):
-        data = future.result()
-
         if self._check_error():
             return
+
+        data = future.result()
         
         future = self.read_until(b'\r\n\r\n')
         future_add_done_callback(future, self._on_content_length)
