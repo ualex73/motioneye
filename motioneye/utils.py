@@ -611,7 +611,7 @@ def test_rtsp_url(data, callback):
         called[0] = True
         cameras = []
         if identifier:
-            identifier = ' ' + identifier.decode()
+            identifier = ' ' + identifier
             
         else:
             identifier = ''
@@ -844,7 +844,7 @@ def build_editable_mask_file(camera_id, mask_lines, capture_width=None, capture_
                   (camera_id, width, height))
 
     # horizontal rectangles
-    nx = MASK_WIDTH  # number of rectangles
+    nx = int(MASK_WIDTH)  # number of rectangles
     if width % nx:
         nx -= 1
         rx = width % nx  # remainder
@@ -855,7 +855,7 @@ def build_editable_mask_file(camera_id, mask_lines, capture_width=None, capture_
     rw = width / nx  # rectangle width
 
     # vertical rectangles
-    ny = mask_height = height * MASK_WIDTH / width  # number of rectangles
+    ny = mask_height = int(height * MASK_WIDTH / width)  # number of rectangles
     if height % ny:
         ny -= 1
         ry = height % ny  # remainder
@@ -950,7 +950,7 @@ def parse_editable_mask_file(camera_id, capture_width=None, capture_height=None)
     pixels = list(im.getdata())
 
     # horizontal rectangles
-    nx = MASK_WIDTH  # number of rectangles
+    nx = int(MASK_WIDTH)  # number of rectangles
     if width % nx:
         nx -= 1
         rx = width % nx  # remainder
@@ -961,7 +961,7 @@ def parse_editable_mask_file(camera_id, capture_width=None, capture_height=None)
     rw = width / nx  # rectangle width
 
     # vertical rectangles
-    ny = height * MASK_WIDTH / width  # number of rectangles
+    ny = int(height * MASK_WIDTH / width)  # number of rectangles
     if height % ny:
         ny -= 1
         ry = height % ny  # remainder
