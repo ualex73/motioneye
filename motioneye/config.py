@@ -140,7 +140,7 @@ _MOTION_POST_TO_PRE_42_OPTIONS_MAPPING = {
     'picture_output_motion': 'output_debug_pictures',
     'picture_quality': 'quality',
     'netcam_use_tcp': 'rtsp_uses_tcp',
-    'text_scale': lambda v, data: {'text_double': True if v > 1 else False},
+    'text_scale': lambda v, data: {'text_double': True if int(v) > 1 else False},
     'webcontrol_interface': lambda v, data: {'webcontrol_html_output': bool(v)},
     'webcontrol_parms': None
 }
@@ -642,7 +642,7 @@ def main_ui_to_dict(ui):
 
     if ui.get('admin_password') is not None:
         if ui['admin_password']:
-            data['@admin_password'] = hashlib.sha1(ui['admin_password']).hexdigest()
+            data['@admin_password'] = hashlib.sha1(ui['admin_password'].encode('utf-8')).hexdigest()
 
         else:
             data['@admin_password'] = ''

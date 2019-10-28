@@ -27,7 +27,7 @@ import pipes
 import re
 import signal
 import stat
-from io import StringIO
+from io import BytesIO
 import subprocess
 import time
 import zipfile
@@ -472,7 +472,7 @@ def get_media_content(camera_config, path, media_type):
     full_path = os.path.join(target_dir, path)
 
     try:
-        with open(full_path) as f:
+        with open(full_path, 'rb') as f:
             return f.read()
 
     except Exception as e:
@@ -526,7 +526,7 @@ def get_zipped_content(camera_config, media_type, group, callback):
         logging.debug('reading zip file "%s" into memory' % zip_filename)
 
         try:
-            with open(zip_filename, mode='r') as f:
+            with open(zip_filename, mode='rb') as f:
                 data = f.read()
 
             working.value = False
@@ -811,7 +811,7 @@ def get_media_preview(camera_config, path, media_type, width, height):
         full_path += '.thumb'
 
     try:
-        with open(full_path) as f:
+        with open(full_path, 'rb') as f:
             content = f.read()
 
     except Exception as e:
@@ -823,9 +823,9 @@ def get_media_preview(camera_config, path, media_type, width, height):
     if width is height is None:
         return content
 
-    sio = StringIO(content)
+    bio = BytesIO(content)
     try:
-        image = Image.open(sio)
+        image = Image.open(bio)
 
     except Exception as e:
         logging.error('failed to open media preview image file: %s' % e)
@@ -836,10 +836,10 @@ def get_media_preview(camera_config, path, media_type, width, height):
 
     image.thumbnail((width, height), Image.LINEAR)
 
-    sio = StringIO()
-    image.save(sio, format='JPEG')
+    bio = BytesIO()
+    image.save(bio, format='JPEG')
 
-    return sio.getvalue()
+    return bio.getvalue()
 
 
 def del_media_content(camera_config, path, media_type):
@@ -929,8 +929,8 @@ def get_current_picture(camera_config, width, height):
     if width is height is None:
         return jpg  # no server-side resize needed
 
-    sio = StringIO(jpg)
-    image = Image.open(sio)
+    bio = BytesIO(jpg)
+    image = Image.open(bio)
 
     if width and width < 1:  # given as percent
         width = int(width * image.size[0])
@@ -952,10 +952,10 @@ def get_current_picture(camera_config, width, height):
 
     image.thumbnail((width, height), Image.CUBIC)
 
-    sio = StringIO()
-    image.save(sio, format='JPEG')
+    bio = BytesIO()
+    image.save(bio, format='JPEG')
 
-    return sio.getvalue()
+    return bio.getvalue()
 
 
 def get_prepared_cache(key):
@@ -963,7 +963,7 @@ def get_prepared_cache(key):
 
 
 def set_prepared_cache(data):
-    key = hashlib.sha1(str(time.time())).hexdigest()
+    key = hashlib.sha1(str(time.time()).encode('utf-8')).hexdigest()
 
     if key in _prepared_files:
         logging.warn('key "%s" already present in prepared cache' % key)
